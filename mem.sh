@@ -7,7 +7,7 @@ tpot=(0 $h `expr 12 \* $h` `expr 24 \* $h` `expr 48 \* $h` `expr 96 \* $h` `expr
 #use it for filter
 files_array=()
 function collectExisted() {
-	for file in *.cpp *.md; do
+	for file in `find * -name "*.cpp" -o -name "*.md" -maxdepth 0`; do
 		[ -f "$file" ] || break
 		fname=`echo $file | awk -F'[.]' '{print $1}'`
 		files_array[${#files_array[*]}]=$fname
@@ -31,7 +31,7 @@ function checkNotExisted() {
 # create revise files from dep by EH curve
 now=`date +%s` 
 cd $cPath/dep
-for file in *.cpp *.md; do
+for file in `find * -name "*.cpp" -o -name "*.md" -maxdepth 0`; do
     [ -f "$file" ] || break
     ctime=`stat -f %c $file`
     for idx in ${!tpot[@]}; do
@@ -44,15 +44,17 @@ for file in *.cpp *.md; do
 			    continue
 		    fi
 		    #echo "interval is  "$(($now-$ctime))" pot is "$i" "${tpot[$i]}
-	            ret=$(checkNotExisted $cfname-$idx)
-		    if [[ $? == 200 ]]; then
+		    newVer=$(($idx-1))
+	            $(checkNotExisted $cfname-$newVer)
+		    ret=`echo $?`
+		    if [[ $ret == 200 ]]; then
 			  echo "\033[31mHello ruiyi, pls redo $cfname \033[0m"
 			  if [ "$sux" = "cpp" ]
 			  then 
-				  touch ../$cfname-$(($idx-1)).exp0.$sux
+				  touch ../$cfname-$newVer.exp0.$sux
 			  elif [ "$sux" = "md" ]
 			  then
-				  cp $file ../$cfname-$(($idx-1)).exp0.$sux
+				  cp $file ../$cfname-$newVer.exp0.$sux
 		          fi
 		    fi
 		    break
@@ -63,7 +65,7 @@ done
 
 cd $cPath
 #update the expire time
-for file in *.cpp *.md; do
+for file in `find * -name "*.cpp" -o -name "*.md" -maxdepth 0`; do
     [ -f "$file" ] || break
     ctime=`stat -f %c $file`
     #name-1.exp0.cpp
@@ -82,10 +84,9 @@ for file in *.cpp *.md; do
 		   mv $file $fname.exp$exp.$sux
 		   file=$fname.exp$exp.$sux
 	   fi
-	   echo "\033[31m$file\033[0m"
+	   echo "\033[31mpls redo $file\033[0m"
     else
-	   echo "\033[36m$file\033[0m"
+	   echo "\033[36mpls finish $file ASAP\033[0m"
     fi
-
 done
 
