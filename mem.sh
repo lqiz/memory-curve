@@ -1,15 +1,23 @@
 #!/bin/sh
-cd $HOME/coding
+cPath=$HOME/coding
+cd $cPath
 h=3600
 tpot=(0 $h `expr 12 \* $h` `expr 24 \* $h` `expr 48 \* $h` `expr 96 \* $h` `expr 168 \* $h` `expr 360 \* $h` 525600)
 
 #use it for filter
 files_array=()
-for file in *.cpp *.md; do
-	[ -f "$file" ] || break
-	fname=`echo $file | awk -F'[.]' '{print $1}'`
-	files_array[${#files_array[*]}]=$fname
-done
+function collectExisted() {
+	for file in *.cpp *.md; do
+		[ -f "$file" ] || break
+		fname=`echo $file | awk -F'[.]' '{print $1}'`
+		files_array[${#files_array[*]}]=$fname
+	done
+}
+
+#collect file name existed.
+collectExisted
+cd $cPath/arc
+collectExisted
 
 function checkNotExisted() {
     for i in ${files_array[*]}; do
@@ -22,7 +30,7 @@ function checkNotExisted() {
 
 # create revise files from dep by EH curve
 now=`date +%s` 
-cd $HOME/coding/dep
+cd $cPath/dep
 for file in *.cpp *.md; do
     [ -f "$file" ] || break
     ctime=`stat -f %c $file`
@@ -39,14 +47,21 @@ for file in *.cpp *.md; do
 	            ret=$(checkNotExisted $cfname-$idx)
 		    if [[ $? == 200 ]]; then
 			  echo "\033[31mHello ruiyi, pls redo $cfname \033[0m"
-			  touch ../$cfname-$(($idx-1)).exp0.$sux
+			  if [ "$sux" = "cpp" ]
+			  then 
+				  touch ../$cfname-$(($idx-1)).exp0.$sux
+			  elif [ "$sux" = "md" ]
+			  then
+				  cp $file ../$cfname-$(($idx-1)).exp0.$sux
+		          fi
 		    fi
 		    break
 	    fi
      done 
 done
-cd $HOME/coding
 
+
+cd $cPath
 #update the expire time
 for file in *.cpp *.md; do
     [ -f "$file" ] || break
@@ -60,7 +75,7 @@ for file in *.cpp *.md; do
 	    mv $file ./arc
     fi
     #only exp0 is not null, we update it.
-    if [ $ver ]; then
+    if [[ $ver ]]; then
 	   let duration=${tpot[$ver]}-${tpot[`expr $ver-1`]}
 	   exp=$((($ctime-$now - $duration) / 60))
 	   if [ $exp -gt 0  ]; then
